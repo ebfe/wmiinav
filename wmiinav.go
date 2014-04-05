@@ -52,6 +52,9 @@ func (wm *wmii) Windows() ([]window, error) {
 
 	wins := make([]window, 0, len(dirs))
 	for _, dir := range dirs {
+		if dir.Name == "sel" {
+			continue
+		}
 		fname := fmt.Sprintf("/client/%s/props", dir.Name)
 		props, err := wm.readFile(fname)
 		if err != nil {
