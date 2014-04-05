@@ -9,47 +9,85 @@ import (
 	"code.google.com/p/goplan9/plan9/client"
 )
 
+type window struct {
+	Id    string
+	Props string
+}
+
+type wmii struct {
+	conn *client.Conn
+	fsys *client.Fsys
+}
+
+func newWmii() (*wmii, error) {
+	conn, err := client.DialService("wmii")
+	if err != nil {
+		return nil, err
+	}
+
+	fsys, err := conn.Attach(nil, "", "")
+	if err != nil {
+		conn.Close()
+		return nil, err
+	}
+
+	return &wmii{conn: conn, fsys: fsys}, nil
+}
+
+func (wm *wmii) Close() error {
+	return wm.conn.Close()
+}
+
+func (wm *wmii) Windows() ([]window, error) {
+	fid, err := wm.fsys.Open("/client", plan9.OREAD)
+	if err != nil {
+		return nil, err
+	}
+	defer fid.Close()
+
+	dirs, err := fid.Dirreadall()
+	if err != nil {
+		return nil, err
+	}
+
+	wins := make([]window, 0, len(dirs))
+	for _, dir := range dirs {
+		fname := fmt.Sprintf("/client/%s/props", dir.Name)
+		props, err := wm.readFile(fname)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "wmiinav: read %s: %s", fname, err)
+		}
+		fid.Close()
+		wins = append(wins, window{Id: dir.Name, Props: string(props)})
+	}
+
+	return wins, nil
+}
+
+func (wm *wmii) readFile(name string) ([]byte, error) {
+	fid, err := wm.fsys.Open(name, plan9.OREAD)
+	if err != nil {
+		return nil, err
+	}
+	defer fid.Close()
+	return ioutil.ReadAll(fid)
+}
+
 func main() {
-	c, err := client.MountService("wmii")
+	wm, err := newWmii()
 	if err != nil {
-		panic(err)
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	defer wm.Close()
+
+	windows, err := wm.Windows()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 
-	fclient, err := c.Open("/client", plan9.OREAD)
-	if err != nil {
-		panic(err)
-	}
-	defer fclient.Close()
-
-	dclients, err := fclient.Dirreadall()
-	if err != nil {
-		panic(err)
-	}
-
-	for _, dc := range dclients {
-		if dc.Name == "sel" {
-			continue
-		}
-		fid, err := c.Open(fmt.Sprintf("/client/%s/label", dc.Name), plan9.OREAD)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "%s", err)
-			continue
-		}
-		label, err := ioutil.ReadAll(fid)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "%s", err)
-		}
-		fid.Close()
-		fid, err = c.Open(fmt.Sprintf("/client/%s/props", dc.Name), plan9.OREAD)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "%s", err)
-		}
-		prop, err := ioutil.ReadAll(fid)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "%s", err)
-		}
-		fid.Close()
-
-		fmt.Printf("%s: %s %s\n", dc.Name, prop, label)
+	for i, win := range windows {
+		fmt.Printf("%02x %s\n", i, win.Props)
 	}
 }
