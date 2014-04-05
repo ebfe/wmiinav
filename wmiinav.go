@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 
 	"code.google.com/p/goplan9/plan9"
 	"code.google.com/p/goplan9/plan9/client"
@@ -12,6 +13,10 @@ import (
 type window struct {
 	Id    string
 	Props string
+}
+
+func (win window) String() string {
+	return win.Id + " " + win.Props
 }
 
 type wmii struct {
@@ -79,6 +84,38 @@ func (wm *wmii) readFile(name string) ([]byte, error) {
 	return ioutil.ReadAll(fid)
 }
 
+func selectWindow(windows []window) (int, error) {
+	dmenu := exec.Command("dmenu")
+
+	in, err := dmenu.StdinPipe()
+	if err != nil {
+		return -1, err
+	}
+
+	go func() {
+		for _, win := range windows {
+			fmt.Fprintln(in, win.String())
+		}
+		in.Close()
+	}()
+
+	out, err := dmenu.Output()
+	if err != nil {
+		return -1, err
+	}
+
+	if len(out) > 0 {
+		sel := string(out[:len(out)-1])
+		for i, win := range windows {
+			if win.String() == sel {
+				return i, nil
+			}
+		}
+	}
+
+	return -1, nil
+}
+
 func main() {
 	wm, err := newWmii()
 	if err != nil {
@@ -93,7 +130,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	for i, win := range windows {
-		fmt.Printf("%02x %s\n", i, win.Props)
+	for _, win := range windows {
+		fmt.Println(win)
 	}
+
+	sel, err := selectWindow(windows)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	if sel >= 0 {
+		fmt.Printf("select: %q\n", windows[sel])
+	}
+
 }
