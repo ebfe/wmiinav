@@ -39,13 +39,8 @@ func (wm *wmii) Close() error {
 }
 
 func (wm *wmii) Windows() ([]window, error) {
-	fid, err := wm.fsys.Open("/client", plan9.OREAD)
-	if err != nil {
-		return nil, err
-	}
-	defer fid.Close()
-
-	dirs, err := fid.Dirreadall()
+	dirname := "/client"
+	dirs, err := wm.readDir(dirname)
 	if err != nil {
 		return nil, err
 	}
@@ -60,11 +55,19 @@ func (wm *wmii) Windows() ([]window, error) {
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "wmiinav: read %s: %s", fname, err)
 		}
-		fid.Close()
 		wins = append(wins, window{Id: dir.Name, Props: string(props)})
 	}
 
 	return wins, nil
+}
+
+func (wm *wmii) readDir(name string) ([]*plan9.Dir, error) {
+	fid, err := wm.fsys.Open(name, plan9.OREAD)
+	if err != nil {
+		return nil, err
+	}
+	defer fid.Close()
+	return fid.Dirreadall()
 }
 
 func (wm *wmii) readFile(name string) ([]byte, error) {
