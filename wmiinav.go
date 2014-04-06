@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"strings"
 
 	"code.google.com/p/goplan9/plan9"
 	"code.google.com/p/goplan9/plan9/client"
@@ -13,10 +14,11 @@ import (
 type window struct {
 	Id    string
 	Props string
+	Tags  []string
 }
 
 func (win window) String() string {
-	return win.Id + " " + win.Props
+	return win.Id + " " + win.Props + " " + strings.Join(win.Tags, "+")
 }
 
 type wmii struct {
@@ -60,7 +62,12 @@ func (wm *wmii) Windows() ([]window, error) {
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "wmiinav: read %s: %s", fname, err)
 		}
-		wins = append(wins, window{Id: dir.Name, Props: string(props)})
+		fname = fmt.Sprintf("/client/%s/tags", dir.Name)
+		tags, err := wm.readFile(fname)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "wmiinav: read %s: %s", fname, err)
+		}
+		wins = append(wins, window{Id: dir.Name, Props: string(props), Tags: strings.Split(string(tags), "+")})
 	}
 
 	return wins, nil
