@@ -113,7 +113,7 @@ func (wm *wmii) readFile(name string) ([]byte, error) {
 }
 
 func selectWindow(windows []window) (int, error) {
-	dmenu := exec.Command("dmenu", "-l",  "7", "-i")
+	dmenu := exec.Command("dmenu", "-l",  "7", "-i", "-b")
 
 	in, err := dmenu.StdinPipe()
 	if err != nil {
