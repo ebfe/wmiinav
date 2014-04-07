@@ -93,7 +93,6 @@ func (wm *wmii) View(tag string) error {
 	return err
 }
 
-
 func (wm *wmii) readDir(name string) ([]*plan9.Dir, error) {
 	fid, err := wm.fsys.Open(name, plan9.OREAD)
 	if err != nil {
@@ -113,7 +112,7 @@ func (wm *wmii) readFile(name string) ([]byte, error) {
 }
 
 func selectWindow(windows []window) (int, error) {
-	dmenu := exec.Command("dmenu", "-l",  "7", "-i", "-b")
+	dmenu := exec.Command("dmenu", "-l", "7", "-i", "-b")
 
 	in, err := dmenu.StdinPipe()
 	if err != nil {
@@ -167,9 +166,9 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	
+
 	if sel < 0 {
-		os.Exit(0);
+		os.Exit(0)
 	}
 
 	win := windows[sel]
