@@ -73,6 +73,27 @@ func (wm *wmii) Windows() ([]window, error) {
 	return wins, nil
 }
 
+func (wm *wmii) SelectWindow(id string) error {
+	fid, err := wm.fsys.Open("/tag/sel/ctl", plan9.OWRITE)
+	if err != nil {
+		return err
+	}
+	defer fid.Close()
+	_, err = fid.Write([]byte(fmt.Sprintf("select client %s\n", id)))
+	return err
+}
+
+func (wm *wmii) View(tag string) error {
+	fid, err := wm.fsys.Open("/ctl", plan9.OWRITE)
+	if err != nil {
+		return err
+	}
+	defer fid.Close()
+	_, err = fid.Write([]byte(fmt.Sprintf("view %s\n", tag)))
+	return err
+}
+
+
 func (wm *wmii) readDir(name string) ([]*plan9.Dir, error) {
 	fid, err := wm.fsys.Open(name, plan9.OREAD)
 	if err != nil {
@@ -147,7 +168,9 @@ func main() {
 		os.Exit(1)
 	}
 	if sel >= 0 {
+		win := windows[sel]
 		fmt.Printf("select: %q\n", windows[sel])
+		wm.View(win.Tags[0])
+		wm.SelectWindow(win.Id)
 	}
-
 }
