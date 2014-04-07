@@ -167,10 +167,20 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	if sel >= 0 {
-		win := windows[sel]
-		fmt.Printf("select: %q\n", windows[sel])
-		wm.View(win.Tags[0])
-		wm.SelectWindow(win.Id)
+	
+	if sel < 0 {
+		os.Exit(0);
+	}
+
+	win := windows[sel]
+
+	if err := wm.View(win.Tags[0]); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	if err := wm.SelectWindow(win.Id); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 }
