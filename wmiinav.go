@@ -157,10 +157,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	for _, win := range windows {
-		fmt.Println(win)
-	}
-
 	sel, err := selectWindow(windows)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
