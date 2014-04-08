@@ -76,23 +76,11 @@ func (wm *wmii) Windows() ([]window, error) {
 }
 
 func (wm *wmii) SelectWindow(id string) error {
-	fid, err := wm.fsys.Open("/tag/sel/ctl", plan9.OWRITE)
-	if err != nil {
-		return err
-	}
-	defer fid.Close()
-	_, err = fid.Write([]byte(fmt.Sprintf("select client %s\n", id)))
-	return err
+	return wm.writeFile("/tag/sel/ctl", []byte(fmt.Sprintf("select client %s\n", id)))
 }
 
 func (wm *wmii) View(tag string) error {
-	fid, err := wm.fsys.Open("/ctl", plan9.OWRITE)
-	if err != nil {
-		return err
-	}
-	defer fid.Close()
-	_, err = fid.Write([]byte(fmt.Sprintf("view %s\n", tag)))
-	return err
+	return wm.writeFile("/ctl", []byte(fmt.Sprintf("view %s\n", tag)))
 }
 
 func (wm *wmii) CurrentTag() (string, error) {
@@ -128,6 +116,16 @@ func (wm *wmii) readFile(name string) ([]byte, error) {
 	}
 	defer fid.Close()
 	return ioutil.ReadAll(fid)
+}
+
+func (wm *wmii) writeFile(name string, data []byte) error {
+	fid, err := wm.fsys.Open(name, plan9.OWRITE)
+	if err != nil {
+		return err
+	}
+	_, err = fid.Write(data)
+	fid.Close()
+	return err
 }
 
 func selectWindow(windows []window) (int, error) {
