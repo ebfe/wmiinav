@@ -203,15 +203,17 @@ func main() {
 	}
 
 	win := windows[sel]
+	ctag, _ := wm.CurrentTag()
 
 	if len(win.Tags) == 0 {
-		fmt.Fprintf(os.Stderr, "selected window has no tags\n")
-		return
+		err := wm.AddTag(&win, ctag)
+		if err != nil {
+			fmt.Println(os.Stderr, err)
+			os.Exit(1)
+		}
 	}
 
-	ctag, _ := wm.CurrentTag()
 	ntag := win.Tags[0]
-
 	for _, tag := range win.Tags {
 		if tag == ctag {
 			ntag = tag
