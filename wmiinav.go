@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -93,6 +95,23 @@ func (wm *wmii) View(tag string) error {
 	return err
 }
 
+func (wm *wmii) CurrentTag() (string, error) {
+	buf, err := wm.readFile("/ctl")
+	if err != nil {
+		return "", err
+	}
+
+	sc := bufio.NewScanner(bytes.NewReader(buf))
+	for sc.Scan() {
+		line := sc.Text()
+		if strings.HasPrefix(line, "view ") {
+			return strings.TrimSpace(line[5:]), nil
+		}
+	}
+
+	return "", sc.Err()
+}
+
 func (wm *wmii) readDir(name string) ([]*plan9.Dir, error) {
 	fid, err := wm.fsys.Open(name, plan9.OREAD)
 	if err != nil {
@@ -112,6 +131,12 @@ func (wm *wmii) readFile(name string) ([]byte, error) {
 }
 
 func selectWindow(windows []window) (int, error) {
+
+	items := make([]string, len(windows))
+	for i := range items {
+		items[i] = fmt.Sprintf("<%d> [%s] %s", i, strings.Join(windows[i].Tags, "+"), windows[i].Props)
+	}
+
 	dmenu := exec.Command("dmenu", "-l", "7", "-i", "-b")
 
 	in, err := dmenu.StdinPipe()
@@ -120,8 +145,8 @@ func selectWindow(windows []window) (int, error) {
 	}
 
 	go func() {
-		for _, win := range windows {
-			fmt.Fprintln(in, win.String())
+		for _, item := range items {
+			fmt.Fprintln(in, item)
 		}
 		in.Close()
 	}()
@@ -133,8 +158,8 @@ func selectWindow(windows []window) (int, error) {
 
 	if len(out) > 0 {
 		sel := string(out[:len(out)-1])
-		for i, win := range windows {
-			if win.String() == sel {
+		for i, item := range items {
+			if item == sel {
 				return i, nil
 			}
 		}
@@ -164,14 +189,30 @@ func main() {
 	}
 
 	if sel < 0 {
-		os.Exit(0)
+		return
 	}
 
 	win := windows[sel]
 
-	if err := wm.View(win.Tags[0]); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+	if len(win.Tags) == 0 {
+		fmt.Fprintf(os.Stderr, "selected window has no tags\n")
+		return
+	}
+
+	ctag, _ := wm.CurrentTag()
+	ntag := win.Tags[0]
+
+	for _, tag := range win.Tags {
+		if tag == ctag {
+			ntag = tag
+		}
+	}
+
+	if ntag != ctag {
+		if err := wm.View(ntag); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
 	}
 
 	if err := wm.SelectWindow(win.Id); err != nil {
