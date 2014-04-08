@@ -109,7 +109,7 @@ func (wm *wmii) CurrentTag() (string, error) {
 
 func (wm *wmii) AddTag(win *window, tag string) error {
 	win.Tags = append(win.Tags, tag)
-	return wm.writeFile(fmt.Sprintf("/client/%s/tags", win.Id), []byte("+" + tag))
+	return wm.writeFile(fmt.Sprintf("/client/%s/tags", win.Id), []byte("+"+tag))
 }
 
 func (wm *wmii) readDir(name string) ([]*plan9.Dir, error) {
