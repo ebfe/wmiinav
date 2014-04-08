@@ -65,11 +65,18 @@ func (wm *wmii) Windows() ([]window, error) {
 			fmt.Fprintf(os.Stderr, "wmiinav: read %s: %s", fname, err)
 		}
 		fname = fmt.Sprintf("/client/%s/tags", dir.Name)
-		tags, err := wm.readFile(fname)
+		tagstr, err := wm.readFile(fname)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "wmiinav: read %s: %s", fname, err)
 		}
-		wins = append(wins, window{Id: dir.Name, Props: string(props), Tags: strings.Split(string(tags), "+")})
+		tags := []string{}
+		for _, tag := range strings.Split(string(tagstr), "+") {
+			if tag != "" {
+				tags = append(tags, tag)
+			}
+		}
+
+		wins = append(wins, window{Id: dir.Name, Props: string(props), Tags: tags})
 	}
 
 	return wins, nil
