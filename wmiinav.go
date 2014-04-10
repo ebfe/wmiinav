@@ -141,12 +141,15 @@ func (wm *wmii) writeFile(name string, data []byte) error {
 }
 
 func selectWindow(windows []window) (int, error) {
-
 	items := make([]string, len(windows))
 	for i := range items {
 		items[i] = fmt.Sprintf("<%d> [%s] %s", i, strings.Join(windows[i].Tags, "+"), windows[i].Props)
 	}
 
+	return prompt(items)
+}
+
+func prompt(items []string) (int, error) {
 	dmenu := exec.Command("dmenu", "-l", "7", "-i", "-b")
 
 	in, err := dmenu.StdinPipe()
