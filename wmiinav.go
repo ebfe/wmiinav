@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"sort"
 	"strings"
 
 	"code.google.com/p/goplan9/plan9"
@@ -109,6 +110,7 @@ func (wm *wmii) CurrentTag() (string, error) {
 
 func (wm *wmii) AddTag(win *window, tag string) error {
 	win.Tags = append(win.Tags, tag)
+	sort.Strings(win.Tags)
 	return wm.writeFile(fmt.Sprintf("/client/%s/tags", win.Id), []byte("+"+tag))
 }
 
