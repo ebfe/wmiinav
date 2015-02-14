@@ -213,7 +213,7 @@ func main() {
 	if len(win.Tags) == 0 {
 		err := wm.AddTag(&win, ctag)
 		if err != nil {
-			fmt.Println(os.Stderr, err)
+			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
 	}
