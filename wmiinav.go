@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"sort"
 	"strings"
+	"time"
 
 	"9fans.net/go/plan9"
 	"9fans.net/go/plan9/client"
@@ -123,6 +124,16 @@ func (wm *wmii) readDir(name string) ([]*plan9.Dir, error) {
 	return fid.Dirreadall()
 }
 
+func (wm *wmii) createFile(name string, data []byte) error {
+	fid, err := wm.fsys.Create(name, plan9.OWRITE, 0777)
+	if err != nil {
+		return err
+	}
+	defer fid.Close()
+	_, err = fid.Write(data)
+	return err
+}
+
 func (wm *wmii) readFile(name string) ([]byte, error) {
 	fid, err := wm.fsys.Open(name, plan9.OREAD)
 	if err != nil {
@@ -229,6 +240,33 @@ func nav() error {
 	return wm.SelectWindow(win.Id)
 }
 
+func status() error {
+	wm, err := newWmii()
+	if err != nil {
+		return err
+	}
+	defer wm.Close()
+
+	colors := os.Getenv("WMII_NORMCOLORS")
+	wm.createFile("/rbar/status", []byte(colors+"\n"))
+	tick := time.NewTicker(1 * time.Second)
+	for {
+		load, err := ioutil.ReadFile("/proc/loadavg")
+		if err != nil {
+			load = []byte("? ? ?")
+		}
+		loads := bytes.Split(load, []byte(" "))
+		if len(loads) > 3 {
+			loads = loads[:3]
+		}
+		load = bytes.Join(loads, []byte(" "))
+		now := time.Now().Format(time.UnixDate)
+		wm.writeFile("/rbar/status", []byte(fmt.Sprintf("%s | %s", string(load), now)))
+
+		<-tick.C
+	}
+}
+
 func main() {
 	var cmd = ""
 	if len(os.Args) < 2 {
@@ -241,6 +279,8 @@ func main() {
 	switch cmd {
 	case "nav":
 		err = nav()
+	case "status":
+		err = status()
 	default:
 		err = fmt.Errorf("unknown command %q\n", cmd)
 	}
