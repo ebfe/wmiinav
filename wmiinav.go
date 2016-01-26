@@ -183,38 +183,33 @@ func prompt(items []string) (int, error) {
 	return -1, nil
 }
 
-func nav() {
+func nav() error {
 	wm, err := newWmii()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		return err
 	}
 	defer wm.Close()
 
 	windows, err := wm.Windows()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		return err
 	}
 
 	sel, err := selectWindow(windows)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		return err
 	}
 
 	if sel < 0 {
-		return
+		return nil
 	}
 
 	win := windows[sel]
 	ctag, _ := wm.CurrentTag()
 
 	if len(win.Tags) == 0 {
-		err := wm.AddTag(&win, ctag)
-		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+		if err := wm.AddTag(&win, ctag); err != nil {
+			return err
 		}
 	}
 
@@ -227,15 +222,11 @@ func nav() {
 
 	if ntag != ctag {
 		if err := wm.View(ntag); err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
+			return err
 		}
 	}
 
-	if err := wm.SelectWindow(win.Id); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
-	}
+	return wm.SelectWindow(win.Id)
 }
 
 func main() {
@@ -246,11 +237,16 @@ func main() {
 		cmd = os.Args[1]
 	}
 
+	var err error
 	switch cmd {
 	case "nav":
-		nav()
+		err = nav()
 	default:
-		fmt.Fprintf(os.Stderr, "wmiinav: unknown command %q\n", cmd)
+		err = fmt.Errorf("unknown command %q\n", cmd)
+	}
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "wmiinav: %s\n", err)
 		os.Exit(1)
 	}
 }
