@@ -183,7 +183,7 @@ func prompt(items []string) (int, error) {
 	return -1, nil
 }
 
-func main() {
+func nav() {
 	wm, err := newWmii()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -234,6 +234,23 @@ func main() {
 
 	if err := wm.SelectWindow(win.Id); err != nil {
 		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}
+
+func main() {
+	var cmd = ""
+	if len(os.Args) < 2 {
+		cmd = "nav"
+	} else {
+		cmd = os.Args[1]
+	}
+
+	switch cmd {
+	case "nav":
+		nav()
+	default:
+		fmt.Fprintf(os.Stderr, "wmiinav: unknown command %q\n", cmd)
 		os.Exit(1)
 	}
 }
